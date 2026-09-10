@@ -1,4 +1,12 @@
-import { CPUS, GPUS, POWER_CONSTANTS, RAM_OPTIONS, STANDARD_PSU_SIZES } from '../data/components';
+import {
+  CPUS,
+  GPUS,
+  MOTHERBOARD_OPTIONS,
+  POWER_CONSTANTS,
+  RAM_OPTIONS,
+  STANDARD_PSU_SIZES,
+  USB_OPTIONS,
+} from '../data/components';
 import { CalculationResult, CalculatorInputs } from '../types/calculator';
 import { CpuComponent, GpuComponent } from '../types/components';
 
@@ -9,20 +17,22 @@ import { CpuComponent, GpuComponent } from '../types/components';
  *    - CPU & GPU: Based on selectedCpu.powerWatts and selectedGpu.powerWatts specs from component database.
  *    - RAM: Estimated per total capacity (e.g., 8GB ~5W up to 128GB ~35W).
  *    - Storage: SSD ~5W peak per drive, HDD ~10W peak per drive.
- *    - Cooling: Air cooler ~5W (fan), AIO liquid cooler ~15W (pump + fans).
+ *    - Motherboard: Standard (~25W) vs. High-End (~50W) power draw estimate.
+ *    - Cooling: Air cooler ~5W (fan), AIO liquid cooler ~15W (pump + radiator fans).
  *    - Case Fans: ~3W per fan.
- *    - Miscellaneous System Power: ~40W base allowance for motherboard chipset, RAM controller, USB devices, RGB, fan controllers, etc.
+ *    - Additional PCIe Cards: ~10W per additional PCIe expansion card (sound, capture, network).
+ *    - USB / Peripherals: Low (~5W), Normal (~10W), High (~20W) peripheral load estimate.
+ *    - Residual System Overhead: ~15W baseline allowance for residual VRM losses, fan controllers, RGB, etc.
  *
  * 2. Overclocking:
- *    - When overclocking is active, a 15% increase is added to CPU + GPU base power draw to account for higher voltage/clock limits.
+ *    - When overclocking is active, a 15% estimated overhead is added to CPU + GPU base power draw.
  *
  * 3. Recommendation & Headroom:
  *    - Headroom Factor (default 25% / 1.25 multiplier) guarantees PSUs run in their optimal efficiency curve (usually 50-80% load),
- *      prevents power spikes (transients) from triggering PSU protections (OPP/OCP), and leaves room for future upgrades.
+ *      prevents transient power spikes from triggering PSU protections, and leaves room for upgrades.
  *    - Recommended Power = estimatedPower * 1.25
  *    - Standard PSU Size: Recommended power is rounded UP to the nearest standard PSU rating
  *      (e.g., 450W, 500W, 550W, 600W, 650W, 700W, 750W, 850W, 1000W, 1200W, 1300W, 1500W).
- *      If recommended power exceeds 1500W, it returns the minimum required wattage or the highest PSU step.
  *
  * NOTE: The result is an estimate based on peak load scenarios and standard component ratings.
  */
@@ -68,21 +78,45 @@ export function calculatePowerConsumption(inputs: CalculatorInputs): Calculation
   const ssdPower = Math.max(0, inputs.ssdCount) * POWER_CONSTANTS.SSD_POWER_W;
   const hddPower = Math.max(0, inputs.hddCount) * POWER_CONSTANTS.HDD_POWER_W;
 
-  // 5. Cooling Power
+  // 5. Motherboard Power
+  const selectedMotherboard =
+    MOTHERBOARD_OPTIONS.find((m) => m.type === inputs.motherboardType) || MOTHERBOARD_OPTIONS[0]; // default standard
+  const motherboardPower = selectedMotherboard.estimatedPowerW;
+
+  // 6. Cooling Power
   const coolingPower = inputs.coolingType === 'aio' ? POWER_CONSTANTS.AIO_PUMP_POWER_W : POWER_CONSTANTS.AIR_COOLER_POWER_W;
   const fansPower = Math.max(0, inputs.fanCount) * POWER_CONSTANTS.CASE_FAN_POWER_W;
 
-  // 6. Misc System Power
-  const miscPower = POWER_CONSTANTS.MISC_SYSTEM_POWER_W;
+  // 7. Additional PCIe Expansion Cards
+  const pcieCardsPower = Math.max(0, inputs.pcieCardCount ?? 0) * POWER_CONSTANTS.PCIE_CARD_POWER_W;
 
-  // 7. Overclocking
+  // 8. USB / Peripherals
+  const selectedUsb = USB_OPTIONS.find((u) => u.level === inputs.usbLevel) || USB_OPTIONS[1]; // default normal
+  const usbPower = selectedUsb.estimatedPowerW;
+
+  // 9. Residual System Overhead
+  const systemOverheadPower = POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W;
+
+  // 10. Overclocking Factor
   let overclockBonus = 0;
   if (inputs.isOverclocked) {
     overclockBonus = Math.round((cpuPower + gpuPower) * POWER_CONSTANTS.OVERCLOCK_MULTIPLIER);
   }
 
   // Total Estimated Power
-  const estimatedPowerW = cpuPower + gpuPower + ramPower + ssdPower + hddPower + coolingPower + fansPower + miscPower + overclockBonus;
+  const estimatedPowerW =
+    cpuPower +
+    gpuPower +
+    ramPower +
+    ssdPower +
+    hddPower +
+    motherboardPower +
+    coolingPower +
+    fansPower +
+    pcieCardsPower +
+    usbPower +
+    systemOverheadPower +
+    overclockBonus;
 
   // Headroom & Recommendation
   const headroomFactor = inputs.headroomFactor ?? POWER_CONSTANTS.DEFAULT_HEADROOM_FACTOR;
@@ -102,9 +136,12 @@ export function calculatePowerConsumption(inputs: CalculatorInputs): Calculation
       ram: ramPower,
       ssd: ssdPower,
       hdd: hddPower,
+      motherboard: motherboardPower,
       cooling: coolingPower,
       fans: fansPower,
-      misc: miscPower,
+      pcieCards: pcieCardsPower,
+      usbPeripherals: usbPower,
+      systemOverhead: systemOverheadPower,
       overclockBonus,
     },
   };

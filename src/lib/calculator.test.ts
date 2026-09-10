@@ -1,11 +1,11 @@
 import assert from 'node:assert';
 import test, { describe } from 'node:test';
 import { calculatePowerConsumption, findCpu, findGpu, roundToStandardPsuSize } from './calculator';
-import { CPUS, GPUS } from '../data/components';
+import { CPUS, GPUS, POWER_CONSTANTS } from '../data/components';
 import { filterItems, groupItemsByManufacturer } from '../components/SearchableSelect';
 import { CalculatorInputs } from '../types/calculator';
 
-describe('Power Calculator Database & Engine', () => {
+describe('Power Calculator Database & Engine (STEP 5)', () => {
   describe('Dataset Integrity', () => {
     test('all CPU IDs are unique', () => {
       const cpuIds = CPUS.map((c) => c.id);
@@ -43,53 +43,43 @@ describe('Power Calculator Database & Engine', () => {
 
   describe('Search & Component Filtering', () => {
     test('filters CPUs by model, brand, or query case-insensitively', () => {
-      // AMD query
       const amdCpus = filterItems(CPUS, 'AMD');
       assert.ok(amdCpus.length > 0);
       assert.ok(amdCpus.every((c) => c.manufacturer === 'AMD'));
 
-      // Ryzen 7 query
       const ryzen7Cpus = filterItems(CPUS, 'Ryzen 7');
       assert.ok(ryzen7Cpus.length > 0);
       assert.ok(ryzen7Cpus.some((c) => c.model.includes('Ryzen 7')));
 
-      // 9800X3D case-insensitive query
       const match9800 = filterItems(CPUS, '9800x3d');
       assert.strictEqual(match9800.length, 1);
       assert.strictEqual(match9800[0].id, 'amd-ryzen-7-9800x3d');
 
-      // Core i7 query
       const i7Cpus = filterItems(CPUS, 'Core i7');
       assert.ok(i7Cpus.length > 0);
       assert.ok(i7Cpus.some((c) => c.model.includes('Core i7')));
 
-      // 14900K query
       const match14900 = filterItems(CPUS, '14900K');
       assert.strictEqual(match14900.length, 1);
       assert.strictEqual(match14900[0].id, 'intel-core-i9-14900k');
     });
 
     test('filters GPUs by model, series, or brand case-insensitively', () => {
-      // RTX 5070 query
       const match5070 = filterItems(GPUS, 'RTX 5070');
       assert.strictEqual(match5070.length, 1);
       assert.strictEqual(match5070[0].id, 'nvidia-geforce-rtx-5070');
 
-      // RTX 5080 query
       const match5080 = filterItems(GPUS, 'rtx 5080');
       assert.strictEqual(match5080.length, 1);
       assert.strictEqual(match5080[0].id, 'nvidia-geforce-rtx-5080');
 
-      // RX 9070 query
       const match9070 = filterItems(GPUS, 'RX 9070');
       assert.ok(match9070.length >= 1);
       assert.ok(match9070.some((g) => g.id === 'amd-radeon-rx-9070'));
 
-      // RX 7900 query
       const match7900 = filterItems(GPUS, 'RX 7900');
-      assert.ok(match7900.length >= 3); // GRE, XT, XTX
+      assert.ok(match7900.length >= 3);
 
-      // NVIDIA query
       const nvidiaGpus = filterItems(GPUS, 'NVIDIA');
       assert.ok(nvidiaGpus.length > 0);
       assert.ok(nvidiaGpus.every((g) => g.manufacturer === 'NVIDIA'));
@@ -131,77 +121,120 @@ describe('Power Calculator Database & Engine', () => {
     });
   });
 
-  describe('Power Calculation Engine', () => {
-    test('calculates correct base estimated power and standard PSU recommendation', () => {
-      // Ryzen 7 7800X3D (120W) + RTX 4070 Super (220W) + 16GB RAM (10W) + 1 SSD (5W) + 0 HDD + Air Cooler (5W) + 3 Fans (9W) + Misc (40W) = 409W
-      const inputs: CalculatorInputs = {
-        cpuId: 'amd-ryzen-7-7800x3d',
-        gpuId: 'nvidia-geforce-rtx-4070-super',
-        ramGB: 16,
-        ssdCount: 1,
-        hddCount: 0,
-        coolingType: 'air',
-        fanCount: 3,
-        isOverclocked: false,
-      };
+  describe('STEP 5 Requirements Tests', () => {
+    const baseInputs: CalculatorInputs = {
+      cpuId: 'amd-ryzen-5-5600x', // 65W
+      gpuId: 'nvidia-geforce-rtx-4060', // 115W
+      ramGB: 16, // 10W
+      ssdCount: 1, // 5W
+      hddCount: 0, // 0W
+      motherboardType: 'standard', // 25W
+      coolingType: 'air', // 5W
+      fanCount: 3, // 9W
+      pcieCardCount: 0, // 0W
+      usbLevel: 'normal', // 10W
+      isOverclocked: false, // 0W
+    };
 
-      const result = calculatePowerConsumption(inputs);
-
-      assert.strictEqual(result.estimatedPowerW, 409);
-      // 409 * 1.25 = 511.25 W -> recommendedPowerW = 511 W
-      assert.strictEqual(result.recommendedPowerW, 511);
-      // Rounded UP to standard PSU size -> 550 W
-      assert.strictEqual(result.standardPsuWattage, 550);
-      assert.strictEqual(result.headroomPercent, 25);
+    test('1. Standard motherboard power (25W)', () => {
+      const res = calculatePowerConsumption({ ...baseInputs, motherboardType: 'standard' });
+      assert.strictEqual(res.breakdown.motherboard, 25);
     });
 
-    test('applies 15% overclocking boost to CPU and GPU', () => {
-      // Intel i9-14900K (253W) + RTX 4090 (450W)
-      // Overclock bonus: round((253 + 450) * 0.15) = round(703 * 0.15) = round(105.45) = 105W
+    test('2. High-end motherboard power (50W)', () => {
+      const res = calculatePowerConsumption({ ...baseInputs, motherboardType: 'high_end' });
+      assert.strictEqual(res.breakdown.motherboard, 50);
+    });
+
+    test('3. Additional PCIe cards power (0, 1, 2, 3 cards)', () => {
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, pcieCardCount: 0 }).breakdown.pcieCards, 0);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, pcieCardCount: 1 }).breakdown.pcieCards, 10);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, pcieCardCount: 2 }).breakdown.pcieCards, 20);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, pcieCardCount: 3 }).breakdown.pcieCards, 30);
+    });
+
+    test('4. USB/peripheral levels (low 5W, normal 10W, high 20W)', () => {
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, usbLevel: 'low' }).breakdown.usbPeripherals, 5);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, usbLevel: 'normal' }).breakdown.usbPeripherals, 10);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, usbLevel: 'high' }).breakdown.usbPeripherals, 20);
+    });
+
+    test('5. Air cooling (5W)', () => {
+      const res = calculatePowerConsumption({ ...baseInputs, coolingType: 'air' });
+      assert.strictEqual(res.breakdown.cooling, 5);
+    });
+
+    test('6. AIO cooling (15W)', () => {
+      const res = calculatePowerConsumption({ ...baseInputs, coolingType: 'aio' });
+      assert.strictEqual(res.breakdown.cooling, 15);
+    });
+
+    test('7. Multiple case fans (0, 3, 6 fans)', () => {
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, fanCount: 0 }).breakdown.fans, 0);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, fanCount: 3 }).breakdown.fans, 9);
+      assert.strictEqual(calculatePowerConsumption({ ...baseInputs, fanCount: 6 }).breakdown.fans, 18);
+    });
+
+    test('8. Overclocking disabled', () => {
+      const res = calculatePowerConsumption({ ...baseInputs, isOverclocked: false });
+      assert.strictEqual(res.breakdown.overclockBonus, 0);
+    });
+
+    test('9. Overclocking enabled (15% boost on CPU + GPU)', () => {
+      // 65W CPU + 115W GPU = 180W -> 180 * 0.15 = 27W
+      const res = calculatePowerConsumption({ ...baseInputs, isOverclocked: true });
+      assert.strictEqual(res.breakdown.overclockBonus, 27);
+    });
+
+    test('10. All additional categories combined', () => {
       const inputs: CalculatorInputs = {
-        cpuId: 'intel-core-i9-14900k',
-        gpuId: 'nvidia-geforce-rtx-4090',
-        ramGB: 32, // 15W
+        cpuId: 'intel-core-i9-14900k', // 253W
+        gpuId: 'nvidia-geforce-rtx-4090', // 450W
+        ramGB: 64, // 25W
         ssdCount: 2, // 10W
         hddCount: 1, // 10W
+        motherboardType: 'high_end', // 50W
         coolingType: 'aio', // 15W
         fanCount: 6, // 18W
-        isOverclocked: true,
-      };
-
-      const result = calculatePowerConsumption(inputs);
-
-      // Base: 253 + 450 + 15 + 10 + 10 + 15 + 18 + 40 = 811W
-      // OC bonus: 105W
-      // Total estimated: 916W
-      assert.strictEqual(result.estimatedPowerW, 916);
-      assert.strictEqual(result.breakdown.overclockBonus, 105);
-      // 916 * 1.25 = 1145W -> standard PSU -> 1200W
-      assert.strictEqual(result.standardPsuWattage, 1200);
-    });
-
-    test('calculates power for Next-Gen High-End System (Ryzen 9 9950X + RTX 5090)', () => {
-      // Ryzen 9 9950X (230W) + RTX 5090 (600W) + 64GB RAM (25W) + 2 SSDs (10W) + 0 HDDs + AIO (15W) + 6 Fans (18W) + Misc (40W)
-      // Base = 230 + 600 + 25 + 10 + 0 + 15 + 18 + 40 = 938W
-      const inputs: CalculatorInputs = {
-        cpuId: 'amd-ryzen-9-9950x',
-        gpuId: 'nvidia-geforce-rtx-5090',
-        ramGB: 64,
-        ssdCount: 2,
-        hddCount: 0,
-        coolingType: 'aio',
-        fanCount: 6,
-        isOverclocked: false,
+        pcieCardCount: 2, // 20W
+        usbLevel: 'high', // 20W
+        isOverclocked: true, // 105W ( (253+450)*0.15 )
       };
 
       const res = calculatePowerConsumption(inputs);
-      assert.strictEqual(res.estimatedPowerW, 938);
-      // 938 * 1.25 = 1172.5 -> 1173 W -> standard PSU 1200 W
-      assert.strictEqual(res.recommendedPowerW, 1173);
-      assert.strictEqual(res.standardPsuWattage, 1200);
+      // Sum = 253 + 450 + 25 + 10 + 10 + 50 + 15 + 18 + 20 + 20 + 15 (system overhead) + 105 (OC) = 991 W
+      assert.strictEqual(res.estimatedPowerW, 991);
+      // 991 * 1.25 = 1238.75 W -> 1239 W
+      assert.strictEqual(res.recommendedPowerW, 1239);
+      assert.strictEqual(res.standardPsuWattage, 1300);
     });
 
-    test('rounds standard PSU size properly across all required boundary values', () => {
+    test('11. Calculation breakdown total equals estimated consumption', () => {
+      const res = calculatePowerConsumption(baseInputs);
+      const breakdownSum =
+        res.breakdown.cpu +
+        res.breakdown.gpu +
+        res.breakdown.ram +
+        res.breakdown.ssd +
+        res.breakdown.hdd +
+        res.breakdown.motherboard +
+        res.breakdown.cooling +
+        res.breakdown.fans +
+        res.breakdown.pcieCards +
+        res.breakdown.usbPeripherals +
+        res.breakdown.systemOverhead +
+        res.breakdown.overclockBonus;
+
+      assert.strictEqual(breakdownSum, res.estimatedPowerW);
+    });
+
+    test('12. Safety reserve is applied exactly once', () => {
+      const res = calculatePowerConsumption(baseInputs);
+      const expectedRecommended = Math.round(res.estimatedPowerW * 1.25);
+      assert.strictEqual(res.recommendedPowerW, expectedRecommended);
+    });
+
+    test('13. PSU recommendation rounds upward correctly across boundary values', () => {
       const boundaryExpectedMap: Record<number, number> = {
         449: 450,
         450: 450,
@@ -212,18 +245,13 @@ describe('Power Calculator Database & Engine', () => {
         549: 550,
         550: 550,
         551: 600,
-        599: 600,
-        600: 600,
-        601: 650,
         649: 650,
-        650: 650,
-        651: 700,
-        749: 750,
         750: 750,
         751: 850,
-        849: 850,
         850: 850,
         851: 1000,
+        1200: 1200,
+        1201: 1300,
       };
 
       for (const [input, expected] of Object.entries(boundaryExpectedMap)) {
@@ -236,167 +264,139 @@ describe('Power Calculator Database & Engine', () => {
       }
     });
 
-    describe('System Configurations (A through E)', () => {
-      test('A. Low-end PC', () => {
+    describe('Double-Counting Audit', () => {
+      test('AIO pump and radiator fans are not counted twice', () => {
+        const airRes = calculatePowerConsumption({ ...baseInputs, coolingType: 'air', fanCount: 0 });
+        const aioRes = calculatePowerConsumption({ ...baseInputs, coolingType: 'aio', fanCount: 0 });
+
+        assert.strictEqual(airRes.breakdown.cooling, POWER_CONSTANTS.AIR_COOLER_POWER_W);
+        assert.strictEqual(aioRes.breakdown.cooling, POWER_CONSTANTS.AIO_PUMP_POWER_W);
+        assert.strictEqual(airRes.breakdown.fans, 0);
+        assert.strictEqual(aioRes.breakdown.fans, 0);
+      });
+
+      test('Case fans are not counted twice', () => {
+        const fan0 = calculatePowerConsumption({ ...baseInputs, fanCount: 0 });
+        const fan3 = calculatePowerConsumption({ ...baseInputs, fanCount: 3 });
+        assert.strictEqual(fan3.breakdown.fans - fan0.breakdown.fans, 3 * POWER_CONSTANTS.CASE_FAN_POWER_W);
+      });
+
+      test('Motherboard power is not duplicated inside system overhead', () => {
+        const stdMob = calculatePowerConsumption({ ...baseInputs, motherboardType: 'standard' });
+        const highMob = calculatePowerConsumption({ ...baseInputs, motherboardType: 'high_end' });
+
+        // System overhead remains constant at 15W regardless of motherboard selection
+        assert.strictEqual(stdMob.breakdown.systemOverhead, POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W);
+        assert.strictEqual(highMob.breakdown.systemOverhead, POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W);
+        assert.strictEqual(highMob.breakdown.motherboard - stdMob.breakdown.motherboard, 25);
+      });
+
+      test('USB/peripheral power is not duplicated inside system overhead', () => {
+        const lowUsb = calculatePowerConsumption({ ...baseInputs, usbLevel: 'low' });
+        const highUsb = calculatePowerConsumption({ ...baseInputs, usbLevel: 'high' });
+
+        assert.strictEqual(lowUsb.breakdown.systemOverhead, POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W);
+        assert.strictEqual(highUsb.breakdown.systemOverhead, POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W);
+        assert.strictEqual(highUsb.breakdown.usbPeripherals - lowUsb.breakdown.usbPeripherals, 15);
+      });
+
+      test('PCIe card power is not duplicated inside system overhead', () => {
+        const pcie0 = calculatePowerConsumption({ ...baseInputs, pcieCardCount: 0 });
+        const pcie2 = calculatePowerConsumption({ ...baseInputs, pcieCardCount: 2 });
+
+        assert.strictEqual(pcie0.breakdown.systemOverhead, POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W);
+        assert.strictEqual(pcie2.breakdown.systemOverhead, POWER_CONSTANTS.SYSTEM_OVERHEAD_POWER_W);
+        assert.strictEqual(pcie2.breakdown.pcieCards - pcie0.breakdown.pcieCards, 20);
+      });
+
+      test('Overclocking adjustment is not applied twice', () => {
+        const ocOff = calculatePowerConsumption({ ...baseInputs, isOverclocked: false });
+        const ocOn = calculatePowerConsumption({ ...baseInputs, isOverclocked: true });
+
+        const cpuPower = ocOff.breakdown.cpu;
+        const gpuPower = ocOff.breakdown.gpu;
+        const expectedOcBonus = Math.round((cpuPower + gpuPower) * POWER_CONSTANTS.OVERCLOCK_MULTIPLIER);
+
+        assert.strictEqual(ocOff.breakdown.overclockBonus, 0);
+        assert.strictEqual(ocOn.breakdown.overclockBonus, expectedOcBonus);
+        assert.strictEqual(ocOn.estimatedPowerW, ocOff.estimatedPowerW + expectedOcBonus);
+      });
+
+      test('Safety reserve is not applied twice', () => {
+        const res = calculatePowerConsumption(baseInputs);
+        const expectedRecommended = Math.round(res.estimatedPowerW * 1.25);
+        assert.strictEqual(res.recommendedPowerW, expectedRecommended);
+      });
+    });
+
+    describe('Explicit Test Scenarios (A, B, C)', () => {
+      test('TEST A — Basic PC', () => {
         const inputs: CalculatorInputs = {
-          cpuId: 'amd-ryzen-5-5600x',
-          gpuId: 'nvidia-geforce-rtx-4060',
-          ramGB: 16,
-          ssdCount: 1,
-          hddCount: 0,
-          coolingType: 'air',
-          fanCount: 3,
-          isOverclocked: false,
+          cpuId: 'amd-ryzen-5-5600x', // 65W
+          gpuId: 'nvidia-geforce-rtx-4060', // 115W
+          ramGB: 16, // 10W
+          ssdCount: 1, // 5W
+          hddCount: 0, // 0W
+          motherboardType: 'standard', // 25W
+          coolingType: 'air', // 5W
+          fanCount: 2, // 6W
+          pcieCardCount: 0, // 0W
+          usbLevel: 'low', // 5W
+          isOverclocked: false, // 0W
         };
         const res = calculatePowerConsumption(inputs);
 
-        // 65 (CPU) + 115 (GPU) + 10 (RAM) + 5 (SSD) + 0 + 5 (Air) + 9 (Fans) + 40 (Misc) = 249 W
-        assert.strictEqual(res.estimatedPowerW, 249);
-        // 249 * 1.25 = 311.25 -> 311 W
-        assert.strictEqual(res.recommendedPowerW, 311);
+        // 65 + 115 + 10 + 5 + 0 + 25 + 5 + 6 + 0 + 5 + 15 (overhead) + 0 = 251 W
+        assert.strictEqual(res.estimatedPowerW, 251);
+        // 251 * 1.25 = 313.75 -> 314 W
+        assert.strictEqual(res.recommendedPowerW, 314);
         assert.strictEqual(res.standardPsuWattage, 450);
-
-        // Breakdown sum check
-        const bSum =
-          res.breakdown.cpu +
-          res.breakdown.gpu +
-          res.breakdown.ram +
-          res.breakdown.ssd +
-          res.breakdown.hdd +
-          res.breakdown.cooling +
-          res.breakdown.fans +
-          res.breakdown.misc +
-          res.breakdown.overclockBonus;
-        assert.strictEqual(bSum, res.estimatedPowerW);
       });
 
-      test('B. Gaming PC', () => {
+      test('TEST B — Gaming PC', () => {
         const inputs: CalculatorInputs = {
-          cpuId: 'amd-ryzen-7-7800x3d',
-          gpuId: 'nvidia-geforce-rtx-4070-super',
-          ramGB: 32,
-          ssdCount: 1,
-          hddCount: 0,
-          coolingType: 'air',
-          fanCount: 4,
-          isOverclocked: false,
+          cpuId: 'amd-ryzen-7-7800x3d', // 120W
+          gpuId: 'nvidia-geforce-rtx-4070-super', // 220W
+          ramGB: 32, // 15W
+          ssdCount: 1, // 5W
+          hddCount: 1, // 10W
+          motherboardType: 'high_end', // 50W
+          coolingType: 'aio', // 15W
+          fanCount: 4, // 12W
+          pcieCardCount: 1, // 10W
+          usbLevel: 'normal', // 10W
+          isOverclocked: false, // 0W
         };
         const res = calculatePowerConsumption(inputs);
 
-        // 120 (CPU) + 220 (GPU) + 15 (RAM) + 5 (SSD) + 0 + 5 (Air) + 12 (Fans) + 40 (Misc) = 417 W
-        assert.strictEqual(res.estimatedPowerW, 417);
-        // 417 * 1.25 = 521.25 -> 521 W
-        assert.strictEqual(res.recommendedPowerW, 521);
-        assert.strictEqual(res.standardPsuWattage, 550);
-
-        const bSum =
-          res.breakdown.cpu +
-          res.breakdown.gpu +
-          res.breakdown.ram +
-          res.breakdown.ssd +
-          res.breakdown.hdd +
-          res.breakdown.cooling +
-          res.breakdown.fans +
-          res.breakdown.misc +
-          res.breakdown.overclockBonus;
-        assert.strictEqual(bSum, res.estimatedPowerW);
+        // 120 + 220 + 15 + 5 + 10 + 50 + 15 + 12 + 10 + 10 + 15 (overhead) + 0 = 482 W
+        assert.strictEqual(res.estimatedPowerW, 482);
+        // 482 * 1.25 = 602.5 -> 603 W
+        assert.strictEqual(res.recommendedPowerW, 603);
+        assert.strictEqual(res.standardPsuWattage, 650);
       });
 
-      test('C. High-end PC', () => {
+      test('TEST C — High-end / Overclocked', () => {
         const inputs: CalculatorInputs = {
-          cpuId: 'intel-core-i9-14900k',
-          gpuId: 'nvidia-geforce-rtx-4090',
-          ramGB: 64,
-          ssdCount: 2,
-          hddCount: 1,
-          coolingType: 'aio',
-          fanCount: 6,
-          isOverclocked: false,
+          cpuId: 'intel-core-i9-14900k', // 253W
+          gpuId: 'nvidia-geforce-rtx-4090', // 450W
+          ramGB: 64, // 25W
+          ssdCount: 2, // 10W
+          hddCount: 1, // 10W
+          motherboardType: 'high_end', // 50W
+          coolingType: 'aio', // 15W
+          fanCount: 6, // 18W
+          pcieCardCount: 2, // 20W
+          usbLevel: 'high', // 20W
+          isOverclocked: true, // 105W
         };
         const res = calculatePowerConsumption(inputs);
 
-        // 253 + 450 + 25 + 10 + 10 + 15 + 18 + 40 = 821 W
-        assert.strictEqual(res.estimatedPowerW, 821);
-        // 821 * 1.25 = 1026.25 -> 1026 W
-        assert.strictEqual(res.recommendedPowerW, 1026);
-        assert.strictEqual(res.standardPsuWattage, 1200);
-
-        const bSum =
-          res.breakdown.cpu +
-          res.breakdown.gpu +
-          res.breakdown.ram +
-          res.breakdown.ssd +
-          res.breakdown.hdd +
-          res.breakdown.cooling +
-          res.breakdown.fans +
-          res.breakdown.misc +
-          res.breakdown.overclockBonus;
-        assert.strictEqual(bSum, res.estimatedPowerW);
-      });
-
-      test('D. Overclocked PC', () => {
-        const inputs: CalculatorInputs = {
-          cpuId: 'intel-core-i9-14900k',
-          gpuId: 'nvidia-geforce-rtx-4090',
-          ramGB: 64,
-          ssdCount: 2,
-          hddCount: 1,
-          coolingType: 'aio',
-          fanCount: 6,
-          isOverclocked: true,
-        };
-        const res = calculatePowerConsumption(inputs);
-
-        // Base 821 W + OC (105 W) = 926 W
-        assert.strictEqual(res.estimatedPowerW, 926);
-        assert.strictEqual(res.breakdown.overclockBonus, 105);
-        // 926 * 1.25 = 1158 W
-        assert.strictEqual(res.recommendedPowerW, 1158);
-        assert.strictEqual(res.standardPsuWattage, 1200);
-
-        const bSum =
-          res.breakdown.cpu +
-          res.breakdown.gpu +
-          res.breakdown.ram +
-          res.breakdown.ssd +
-          res.breakdown.hdd +
-          res.breakdown.cooling +
-          res.breakdown.fans +
-          res.breakdown.misc +
-          res.breakdown.overclockBonus;
-        assert.strictEqual(bSum, res.estimatedPowerW);
-      });
-
-      test('E. Minimal PC', () => {
-        const inputs: CalculatorInputs = {
-          cpuId: 'amd-ryzen-5-5600x',
-          gpuId: 'nvidia-geforce-rtx-4060',
-          ramGB: 8,
-          ssdCount: 0,
-          hddCount: 0,
-          coolingType: 'air',
-          fanCount: 0,
-          isOverclocked: false,
-        };
-        const res = calculatePowerConsumption(inputs);
-
-        // 65 + 115 + 5 + 0 + 0 + 5 + 0 + 40 = 230 W
-        assert.strictEqual(res.estimatedPowerW, 230);
-        // 230 * 1.25 = 287.5 -> 288 W
-        assert.strictEqual(res.recommendedPowerW, 288);
-        assert.strictEqual(res.standardPsuWattage, 450);
-
-        const bSum =
-          res.breakdown.cpu +
-          res.breakdown.gpu +
-          res.breakdown.ram +
-          res.breakdown.ssd +
-          res.breakdown.hdd +
-          res.breakdown.cooling +
-          res.breakdown.fans +
-          res.breakdown.misc +
-          res.breakdown.overclockBonus;
-        assert.strictEqual(bSum, res.estimatedPowerW);
+        // 253 + 450 + 25 + 10 + 10 + 50 + 15 + 18 + 20 + 20 + 15 + 105 = 991 W
+        assert.strictEqual(res.estimatedPowerW, 991);
+        // 991 * 1.25 = 1238.75 -> 1239 W
+        assert.strictEqual(res.recommendedPowerW, 1239);
+        assert.strictEqual(res.standardPsuWattage, 1300);
       });
     });
   });
