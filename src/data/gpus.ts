@@ -9,6 +9,9 @@ import { GpuComponent } from '../types/components';
  * and do not constitute exact laboratory power measurements.
  */
 export const GPUS: GpuComponent[] = [
+  // Integrierte / Keine dedizierte Grafikkarte
+  { id: 'integrated-graphics', manufacturer: 'Integrierte Grafik', model: 'Keine (iGPU / Integriert)', powerWatts: 0 },
+
   // NVIDIA GeForce RTX 30 / 40 / 50 Series
   { id: 'nvidia-geforce-rtx-3060', manufacturer: 'NVIDIA', model: 'GeForce RTX 3060', powerWatts: 170 },
   { id: 'nvidia-geforce-rtx-4060', manufacturer: 'NVIDIA', model: 'GeForce RTX 4060', powerWatts: 115 },

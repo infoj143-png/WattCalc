@@ -231,7 +231,7 @@ export function PowerCalculator() {
             >
               {MOTHERBOARD_OPTIONS.map((mb) => (
                 <option key={mb.type} value={mb.type}>
-                  {mb.type === 'standard' ? 'Standard' : 'High-End'}
+                  {mb.label}
                 </option>
               ))}
             </select>
@@ -316,7 +316,7 @@ export function PowerCalculator() {
             >
               {USB_OPTIONS.map((u) => (
                 <option key={u.level} value={u.level}>
-                  {u.level === 'low' ? 'Keine / Wenig' : u.level === 'normal' ? 'Normal' : 'Viele'}
+                  {u.label}
                 </option>
               ))}
             </select>
@@ -493,7 +493,7 @@ export function PowerCalculator() {
           {/* Ergebnis-Erklärung */}
           <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-800/80 text-xs sm:text-sm text-slate-300 space-y-2">
             <p>
-              Das Ergebnis basiert auf den ausgewählten Komponenten und einer zusätzlichen Leistungsreserve. Der tatsächliche Stromverbrauch kann je nach Hardware, Auslastung und Systemkonfiguration abweichen.
+              Hinweis: Das Ergebnis ist eine unverbindliche Schätzung zur Orientierung bei der Netzteilauswahl (basierend auf geschätzter Komponenten-Spitzenlast inkl. 25 % Planungsreserve für optimale Effizienz und Lastspitzen) und stellt keine elektrische Sicherheitsgarantie oder exakte Leistungsmessung dar.
             </p>
           </div>
         </div>

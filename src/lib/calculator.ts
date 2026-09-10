@@ -61,6 +61,16 @@ export function findGpu(gpuId: string): GpuComponent {
   return match || GPUS[0];
 }
 
+function sanitizeCount(val: unknown, max = 50): number {
+  if (typeof val !== 'number' || !Number.isFinite(val) || val < 0) return 0;
+  return Math.min(max, Math.floor(val));
+}
+
+function sanitizeHeadroomFactor(val: unknown, fallback = POWER_CONSTANTS.DEFAULT_HEADROOM_FACTOR): number {
+  if (typeof val !== 'number' || !Number.isFinite(val) || val < 0) return fallback;
+  return val;
+}
+
 export function calculatePowerConsumption(inputs: CalculatorInputs): CalculationResult {
   // 1. CPU Power from component dataset
   const selectedCpu = findCpu(inputs.cpuId);
@@ -75,8 +85,10 @@ export function calculatePowerConsumption(inputs: CalculatorInputs): Calculation
   const ramPower = selectedRam.estimatedPowerW;
 
   // 4. Storage Power
-  const ssdPower = Math.max(0, inputs.ssdCount) * POWER_CONSTANTS.SSD_POWER_W;
-  const hddPower = Math.max(0, inputs.hddCount) * POWER_CONSTANTS.HDD_POWER_W;
+  const ssdCount = sanitizeCount(inputs.ssdCount);
+  const hddCount = sanitizeCount(inputs.hddCount);
+  const ssdPower = ssdCount * POWER_CONSTANTS.SSD_POWER_W;
+  const hddPower = hddCount * POWER_CONSTANTS.HDD_POWER_W;
 
   // 5. Motherboard Power
   const selectedMotherboard =
@@ -84,11 +96,13 @@ export function calculatePowerConsumption(inputs: CalculatorInputs): Calculation
   const motherboardPower = selectedMotherboard.estimatedPowerW;
 
   // 6. Cooling Power
+  const fanCount = sanitizeCount(inputs.fanCount);
   const coolingPower = inputs.coolingType === 'aio' ? POWER_CONSTANTS.AIO_PUMP_POWER_W : POWER_CONSTANTS.AIR_COOLER_POWER_W;
-  const fansPower = Math.max(0, inputs.fanCount) * POWER_CONSTANTS.CASE_FAN_POWER_W;
+  const fansPower = fanCount * POWER_CONSTANTS.CASE_FAN_POWER_W;
 
   // 7. Additional PCIe Expansion Cards
-  const pcieCardsPower = Math.max(0, inputs.pcieCardCount ?? 0) * POWER_CONSTANTS.PCIE_CARD_POWER_W;
+  const pcieCardCount = sanitizeCount(inputs.pcieCardCount);
+  const pcieCardsPower = pcieCardCount * POWER_CONSTANTS.PCIE_CARD_POWER_W;
 
   // 8. USB / Peripherals
   const selectedUsb = USB_OPTIONS.find((u) => u.level === inputs.usbLevel) || USB_OPTIONS[1]; // default normal
@@ -119,7 +133,7 @@ export function calculatePowerConsumption(inputs: CalculatorInputs): Calculation
     overclockBonus;
 
   // Headroom & Recommendation
-  const headroomFactor = inputs.headroomFactor ?? POWER_CONSTANTS.DEFAULT_HEADROOM_FACTOR;
+  const headroomFactor = sanitizeHeadroomFactor(inputs.headroomFactor, POWER_CONSTANTS.DEFAULT_HEADROOM_FACTOR);
   const recommendedPowerUnrounded = estimatedPowerW * (1 + headroomFactor);
 
   // Round UP to standard PSU wattage
@@ -148,11 +162,16 @@ export function calculatePowerConsumption(inputs: CalculatorInputs): Calculation
 }
 
 export function roundToStandardPsuSize(recommendedWattage: number): number {
+  const safeWattage =
+    typeof recommendedWattage === 'number' && Number.isFinite(recommendedWattage) && recommendedWattage > 0
+      ? recommendedWattage
+      : 0;
+
   for (const psuSize of STANDARD_PSU_SIZES) {
-    if (psuSize >= recommendedWattage) {
+    if (psuSize >= safeWattage) {
       return psuSize;
     }
   }
   // If required wattage exceeds highest standard PSU (1500W), round up to nearest 100W increment
-  return Math.ceil(recommendedWattage / 100) * 100;
+  return Math.ceil(safeWattage / 100) * 100;
 }
