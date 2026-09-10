@@ -12,9 +12,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wattcalc.de';
+
 export const metadata: Metadata = {
-  title: "Netzteil Rechner – PC Netzteil Watt berechnen | WattCalc",
-  description: "Mit dem WattCalc Netzteil Rechner berechnest du schnell die benötigte Netzteil-Leistung für deinen PC.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Netzteil Rechner – PC Netzteil Watt berechnen | WattCalc",
+    template: "%s | WattCalc",
+  },
+  description: "Netzteil Rechner für PC: Berechne schnell den Watt-Bedarf deines PCs aus CPU, GPU & Komponenten. Inkl. 25 % Reserve-Planung für die Netzteil-Wahl.",
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
