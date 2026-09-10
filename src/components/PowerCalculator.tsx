@@ -19,11 +19,79 @@ export function PowerCalculator() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState<boolean>(true);
 
+  // Reset calculation result when inputs change to prevent displaying stale results
+  const resetResultOnInputChange = () => {
+    if (result !== null) {
+      setResult(null);
+    }
+    if (errorMsg !== null) {
+      setErrorMsg(null);
+    }
+  };
+
+  const handleCpuChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCpuId(e.target.value);
+    resetResultOnInputChange();
+  };
+
+  const handleGpuChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setGpuId(e.target.value);
+    resetResultOnInputChange();
+  };
+
+  const handleRamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRamGB(Number(e.target.value));
+    resetResultOnInputChange();
+  };
+
+  const handleSsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    setSsdCount(isNaN(val) ? 0 : val);
+    resetResultOnInputChange();
+  };
+
+  const handleHddChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    setHddCount(isNaN(val) ? 0 : val);
+    resetResultOnInputChange();
+  };
+
+  const handleCoolingChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCoolingType(e.target.value as CoolingType);
+    resetResultOnInputChange();
+  };
+
+  const handleFanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    setFanCount(isNaN(val) ? 0 : val);
+    resetResultOnInputChange();
+  };
+
+  const handleOverclockChange = (overclocked: boolean) => {
+    setIsOverclocked(overclocked);
+    resetResultOnInputChange();
+  };
+
   const handleCalculate = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (ssdCount < 0 || hddCount < 0 || fanCount < 0) {
-      setErrorMsg('Bitte geben Sie gültige Anzahlen (0 oder mehr) ein.');
+    if (
+      !Number.isInteger(ssdCount) || ssdCount < 0 || ssdCount > 20 ||
+      !Number.isInteger(hddCount) || hddCount < 0 || hddCount > 20 ||
+      !Number.isInteger(fanCount) || fanCount < 0 || fanCount > 20
+    ) {
+      setErrorMsg('Bitte geben Sie für SSD, HDD und Lüfter eine Zahl zwischen 0 und 20 ein.');
+      setResult(null);
+      return;
+    }
+
+    const validCpu = CPUS.some((cpu) => cpu.id === cpuId);
+    const validGpu = GPUS.some((gpu) => gpu.id === gpuId);
+    const validRam = RAM_OPTIONS.some((ram) => ram.capacityGB === ramGB);
+
+    if (!validCpu || !validGpu || !validRam) {
+      setErrorMsg('Ungültige Komponentenauswahl. Bitte überprüfen Sie Ihre Eingaben.');
+      setResult(null);
       return;
     }
 
@@ -33,10 +101,10 @@ export function PowerCalculator() {
       cpuId,
       gpuId,
       ramGB,
-      ssdCount: Number(ssdCount) || 0,
-      hddCount: Number(hddCount) || 0,
+      ssdCount,
+      hddCount,
       coolingType,
-      fanCount: Number(fanCount) || 0,
+      fanCount,
       isOverclocked,
     });
 
@@ -56,7 +124,7 @@ export function PowerCalculator() {
             <select
               id="cpu-select"
               value={cpuId}
-              onChange={(e) => setCpuId(e.target.value)}
+              onChange={handleCpuChange}
               className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
             >
               {CPUS.map((cpu) => (
@@ -75,7 +143,7 @@ export function PowerCalculator() {
             <select
               id="gpu-select"
               value={gpuId}
-              onChange={(e) => setGpuId(e.target.value)}
+              onChange={handleGpuChange}
               className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
             >
               {GPUS.map((gpu) => (
@@ -94,7 +162,7 @@ export function PowerCalculator() {
             <select
               id="ram-select"
               value={ramGB}
-              onChange={(e) => setRamGB(Number(e.target.value))}
+              onChange={handleRamChange}
               className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
             >
               {RAM_OPTIONS.map((ram) => (
@@ -121,7 +189,7 @@ export function PowerCalculator() {
                   min="0"
                   max="20"
                   value={ssdCount}
-                  onChange={(e) => setSsdCount(parseInt(e.target.value, 10) || 0)}
+                  onChange={handleSsdChange}
                   className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
@@ -136,7 +204,7 @@ export function PowerCalculator() {
                   min="0"
                   max="20"
                   value={hddCount}
-                  onChange={(e) => setHddCount(parseInt(e.target.value, 10) || 0)}
+                  onChange={handleHddChange}
                   className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
@@ -156,7 +224,7 @@ export function PowerCalculator() {
                 <select
                   id="cooling-select"
                   value={coolingType}
-                  onChange={(e) => setCoolingType(e.target.value as CoolingType)}
+                  onChange={handleCoolingChange}
                   className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
                 >
                   <option value="air">Luftkühlung</option>
@@ -174,7 +242,7 @@ export function PowerCalculator() {
                   min="0"
                   max="20"
                   value={fanCount}
-                  onChange={(e) => setFanCount(parseInt(e.target.value, 10) || 0)}
+                  onChange={handleFanChange}
                   className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
@@ -193,7 +261,7 @@ export function PowerCalculator() {
                     type="radio"
                     name="overclock"
                     checked={!isOverclocked}
-                    onChange={() => setIsOverclocked(false)}
+                    onChange={() => handleOverclockChange(false)}
                     className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-slate-900"
                   />
                   <span className="text-slate-200 text-base">Nein</span>
@@ -203,7 +271,7 @@ export function PowerCalculator() {
                     type="radio"
                     name="overclock"
                     checked={isOverclocked}
-                    onChange={() => setIsOverclocked(true)}
+                    onChange={() => handleOverclockChange(true)}
                     className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-slate-900"
                   />
                   <span className="text-slate-200 text-base">Ja</span>
@@ -232,7 +300,7 @@ export function PowerCalculator() {
 
       {/* Results Section */}
       {result && (
-        <div className="pt-8 border-t border-slate-800 space-y-8 animate-fadeIn">
+        <div className="pt-8 border-t border-slate-800 space-y-8 animate-fadeIn" aria-live="polite">
           {/* Main Results Card */}
           <div className="space-y-4">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -285,13 +353,14 @@ export function PowerCalculator() {
                 onClick={() => setShowBreakdown(!showBreakdown)}
                 className="text-xs font-semibold text-blue-400 hover:text-blue-300 focus:outline-none transition-colors"
                 aria-expanded={showBreakdown}
+                aria-controls="breakdown-details"
               >
                 {showBreakdown ? 'Einklappen' : 'Ausklappen'}
               </button>
             </div>
 
             {showBreakdown && (
-              <div className="pt-2 border-t border-slate-700/50 space-y-2 text-sm text-slate-300">
+              <div id="breakdown-details" className="pt-2 border-t border-slate-700/50 space-y-2 text-sm text-slate-300">
                 <div className="flex justify-between py-1 border-b border-slate-800">
                   <span>CPU</span>
                   <span className="font-mono font-medium text-slate-100">{result.breakdown.cpu} W</span>
