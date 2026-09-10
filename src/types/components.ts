@@ -1,5 +1,5 @@
 export type CpuManufacturer = 'AMD' | 'Intel';
-export type GpuManufacturer = 'NVIDIA' | 'AMD' | 'Intel';
+export type GpuManufacturer = 'NVIDIA' | 'AMD' | 'Intel' | 'Integrierte Grafik';
 
 /**
  * CPU Data Model
