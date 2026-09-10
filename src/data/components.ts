@@ -1,45 +1,21 @@
-import { CpuComponent, GpuComponent, RamOption } from '../types/calculator';
+import { CPUS as CPUS_DATA } from './cpus';
+import { GPUS as GPUS_DATA } from './gpus';
+import { CpuComponent, GpuComponent } from '../types/components';
+import { RamOption } from '../types/calculator';
 
-export const CPUS: CpuComponent[] = [
-  // AMD
-  { id: 'amd-7800x3d', name: 'AMD Ryzen 7 7800X3D', estimatedPowerW: 120, brand: 'AMD' },
-  { id: 'amd-7950x3d', name: 'AMD Ryzen 9 7950X3D', estimatedPowerW: 162, brand: 'AMD' },
-  { id: 'amd-7600x', name: 'AMD Ryzen 5 7600X', estimatedPowerW: 105, brand: 'AMD' },
-  { id: 'amd-5700x3d', name: 'AMD Ryzen 7 5700X3D', estimatedPowerW: 105, brand: 'AMD' },
-  { id: 'amd-5600x', name: 'AMD Ryzen 5 5600X', estimatedPowerW: 65, brand: 'AMD' },
-  { id: 'amd-9800x3d', name: 'AMD Ryzen 7 9800X3D', estimatedPowerW: 120, brand: 'AMD' },
-  { id: 'amd-9950x', name: 'AMD Ryzen 9 9950X', estimatedPowerW: 230, brand: 'AMD' },
+// Enrich CPUS with helper getter/properties for name and estimatedPowerW
+export const CPUS: CpuComponent[] = CPUS_DATA.map((cpu) => ({
+  ...cpu,
+  name: `${cpu.manufacturer} ${cpu.model}`,
+  estimatedPowerW: cpu.powerWatts,
+}));
 
-  // Intel
-  { id: 'intel-14900k', name: 'Intel Core i9-14900K', estimatedPowerW: 253, brand: 'Intel' },
-  { id: 'intel-14700k', name: 'Intel Core i7-14700K', estimatedPowerW: 253, brand: 'Intel' },
-  { id: 'intel-14600k', name: 'Intel Core i5-14600K', estimatedPowerW: 181, brand: 'Intel' },
-  { id: 'intel-13900k', name: 'Intel Core i9-13900K', estimatedPowerW: 253, brand: 'Intel' },
-  { id: 'intel-13600k', name: 'Intel Core i5-13600K', estimatedPowerW: 181, brand: 'Intel' },
-  { id: 'intel-12400f', name: 'Intel Core i5-12400F', estimatedPowerW: 117, brand: 'Intel' },
-  { id: 'intel-285k', name: 'Intel Core Ultra 9 285K', estimatedPowerW: 250, brand: 'Intel' },
-  { id: 'intel-265k', name: 'Intel Core Ultra 7 265K', estimatedPowerW: 250, brand: 'Intel' },
-];
-
-export const GPUS: GpuComponent[] = [
-  // NVIDIA
-  { id: 'rtx-4090', name: 'NVIDIA GeForce RTX 4090', estimatedPowerW: 450, brand: 'NVIDIA' },
-  { id: 'rtx-4080-super', name: 'NVIDIA GeForce RTX 4080 Super', estimatedPowerW: 320, brand: 'NVIDIA' },
-  { id: 'rtx-4070-ti-super', name: 'NVIDIA GeForce RTX 4070 Ti Super', estimatedPowerW: 285, brand: 'NVIDIA' },
-  { id: 'rtx-4070-super', name: 'NVIDIA GeForce RTX 4070 Super', estimatedPowerW: 220, brand: 'NVIDIA' },
-  { id: 'rtx-4060-ti', name: 'NVIDIA GeForce RTX 4060 Ti', estimatedPowerW: 160, brand: 'NVIDIA' },
-  { id: 'rtx-4060', name: 'NVIDIA GeForce RTX 4060', estimatedPowerW: 115, brand: 'NVIDIA' },
-  { id: 'rtx-3060', name: 'NVIDIA GeForce RTX 3060', estimatedPowerW: 170, brand: 'NVIDIA' },
-  { id: 'rtx-5090', name: 'NVIDIA GeForce RTX 5090', estimatedPowerW: 600, brand: 'NVIDIA' },
-  { id: 'rtx-5080', name: 'NVIDIA GeForce RTX 5080', estimatedPowerW: 400, brand: 'NVIDIA' },
-
-  // AMD
-  { id: 'rx-7900-xtx', name: 'AMD Radeon RX 7900 XTX', estimatedPowerW: 355, brand: 'AMD' },
-  { id: 'rx-7900-xt', name: 'AMD Radeon RX 7900 XT', estimatedPowerW: 315, brand: 'AMD' },
-  { id: 'rx-7800-xt', name: 'AMD Radeon RX 7800 XT', estimatedPowerW: 263, brand: 'AMD' },
-  { id: 'rx-7700-xt', name: 'AMD Radeon RX 7700 XT', estimatedPowerW: 245, brand: 'AMD' },
-  { id: 'rx-6600', name: 'AMD Radeon RX 6600', estimatedPowerW: 132, brand: 'AMD' },
-];
+// Enrich GPUS with helper getter/properties for name and estimatedPowerW
+export const GPUS: GpuComponent[] = GPUS_DATA.map((gpu) => ({
+  ...gpu,
+  name: `${gpu.manufacturer} ${gpu.model}`,
+  estimatedPowerW: gpu.powerWatts,
+}));
 
 export const RAM_OPTIONS: RamOption[] = [
   { capacityGB: 8, label: '8 GB', estimatedPowerW: 5 },

@@ -1,11 +1,12 @@
 import { CPUS, GPUS, POWER_CONSTANTS, RAM_OPTIONS, STANDARD_PSU_SIZES } from '../data/components';
 import { CalculationResult, CalculatorInputs } from '../types/calculator';
+import { CpuComponent, GpuComponent } from '../types/components';
 
 /**
  * CALCULATION METHODOLOGY & DISCLAIMER:
  *
  * 1. Component Power Estimation:
- *    - CPU & GPU: Based on peak/load TDP or TGP specs from manufacturers & benchmarks.
+ *    - CPU & GPU: Based on selectedCpu.powerWatts and selectedGpu.powerWatts specs from component database.
  *    - RAM: Estimated per total capacity (e.g., 8GB ~5W up to 128GB ~35W).
  *    - Storage: SSD ~5W peak per drive, HDD ~10W peak per drive.
  *    - Cooling: Air cooler ~5W (fan), AIO liquid cooler ~15W (pump + fans).
@@ -26,14 +27,38 @@ import { CalculationResult, CalculatorInputs } from '../types/calculator';
  * NOTE: The result is an estimate based on peak load scenarios and standard component ratings.
  */
 
-export function calculatePowerConsumption(inputs: CalculatorInputs): CalculationResult {
-  // 1. CPU Power
-  const selectedCpu = CPUS.find((cpu) => cpu.id === inputs.cpuId) || CPUS[0];
-  const cpuPower = selectedCpu.estimatedPowerW;
+export function findCpu(cpuId: string): CpuComponent {
+  const target = cpuId.toLowerCase().trim();
+  const exact = CPUS.find((cpu) => cpu.id.toLowerCase() === target);
+  if (exact) return exact;
 
-  // 2. GPU Power
-  const selectedGpu = GPUS.find((gpu) => gpu.id === inputs.gpuId) || GPUS[0];
-  const gpuPower = selectedGpu.estimatedPowerW;
+  const cleaned = target.replace(/^(amd|intel)-/, '');
+  const match = CPUS.find(
+    (cpu) => cpu.id.includes(cleaned) || cpu.model.toLowerCase().replace(/\s+/g, '-').includes(cleaned)
+  );
+  return match || CPUS[0];
+}
+
+export function findGpu(gpuId: string): GpuComponent {
+  const target = gpuId.toLowerCase().trim();
+  const exact = GPUS.find((gpu) => gpu.id.toLowerCase() === target);
+  if (exact) return exact;
+
+  const cleaned = target.replace(/^(nvidia|amd)-/, '');
+  const match = GPUS.find(
+    (gpu) => gpu.id.includes(cleaned) || gpu.model.toLowerCase().replace(/\s+/g, '-').includes(cleaned)
+  );
+  return match || GPUS[0];
+}
+
+export function calculatePowerConsumption(inputs: CalculatorInputs): CalculationResult {
+  // 1. CPU Power from component dataset
+  const selectedCpu = findCpu(inputs.cpuId);
+  const cpuPower = selectedCpu.powerWatts;
+
+  // 2. GPU Power from component dataset
+  const selectedGpu = findGpu(inputs.gpuId);
+  const gpuPower = selectedGpu.powerWatts;
 
   // 3. RAM Power
   const selectedRam = RAM_OPTIONS.find((ram) => ram.capacityGB === inputs.ramGB) || RAM_OPTIONS[1]; // default 16GB

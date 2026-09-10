@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CPUS, GPUS, RAM_OPTIONS } from '../data/components';
 import { calculatePowerConsumption } from '../lib/calculator';
 import { CalculationResult, CoolingType } from '../types/calculator';
+import { SearchableSelect } from './SearchableSelect';
 
 export function PowerCalculator() {
   const [cpuId, setCpuId] = useState<string>(CPUS[0].id);
@@ -27,16 +28,6 @@ export function PowerCalculator() {
     if (errorMsg !== null) {
       setErrorMsg(null);
     }
-  };
-
-  const handleCpuChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCpuId(e.target.value);
-    resetResultOnInputChange();
-  };
-
-  const handleGpuChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setGpuId(e.target.value);
-    resetResultOnInputChange();
   };
 
   const handleRamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -117,42 +108,32 @@ export function PowerCalculator() {
         {/* Input Groups */}
         <div className="space-y-6">
           {/* Prozessor (CPU) */}
-          <div className="space-y-2">
-            <label htmlFor="cpu-select" className="block text-sm font-semibold text-slate-200">
-              Prozessor (CPU)
-            </label>
-            <select
-              id="cpu-select"
-              value={cpuId}
-              onChange={handleCpuChange}
-              className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              {CPUS.map((cpu) => (
-                <option key={cpu.id} value={cpu.id}>
-                  {cpu.name} ({cpu.estimatedPowerW} W)
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Prozessor (CPU)"
+            id="cpu-select"
+            items={CPUS}
+            selectedId={cpuId}
+            onSelect={(id) => {
+              setCpuId(id);
+              resetResultOnInputChange();
+            }}
+            noMatchMessage="Keine passende CPU gefunden."
+            placeholder="Suchen... z. B. Ryzen 7, 9800X3D, Core i7, 14900K"
+          />
 
           {/* Grafikkarte (GPU) */}
-          <div className="space-y-2">
-            <label htmlFor="gpu-select" className="block text-sm font-semibold text-slate-200">
-              Grafikkarte (GPU)
-            </label>
-            <select
-              id="gpu-select"
-              value={gpuId}
-              onChange={handleGpuChange}
-              className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              {GPUS.map((gpu) => (
-                <option key={gpu.id} value={gpu.id}>
-                  {gpu.name} ({gpu.estimatedPowerW} W)
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Grafikkarte (GPU)"
+            id="gpu-select"
+            items={GPUS}
+            selectedId={gpuId}
+            onSelect={(id) => {
+              setGpuId(id);
+              resetResultOnInputChange();
+            }}
+            noMatchMessage="Keine passende Grafikkarte gefunden."
+            placeholder="Suchen... z. B. RTX 5070, RTX 5080, RX 9070, RX 7900"
+          />
 
           {/* Arbeitsspeicher (RAM) */}
           <div className="space-y-2">
