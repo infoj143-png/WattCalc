@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CPUS, GPUS, RAM_OPTIONS } from '../data/components';
+import { CPUS, GPUS, MOTHERBOARD_OPTIONS, RAM_OPTIONS, USB_OPTIONS } from '../data/components';
 import { calculatePowerConsumption } from '../lib/calculator';
-import { CalculationResult, CoolingType } from '../types/calculator';
+import { CalculationResult, CoolingType, MotherboardType, UsbPeripheralLevel } from '../types/calculator';
 import { SearchableSelect } from './SearchableSelect';
 
 export function PowerCalculator() {
@@ -12,8 +12,11 @@ export function PowerCalculator() {
   const [ramGB, setRamGB] = useState<number>(16);
   const [ssdCount, setSsdCount] = useState<number>(1);
   const [hddCount, setHddCount] = useState<number>(0);
+  const [motherboardType, setMotherboardType] = useState<MotherboardType>('standard');
   const [coolingType, setCoolingType] = useState<CoolingType>('air');
   const [fanCount, setFanCount] = useState<number>(3);
+  const [pcieCardCount, setPcieCardCount] = useState<number>(0);
+  const [usbLevel, setUsbLevel] = useState<UsbPeripheralLevel>('normal');
   const [isOverclocked, setIsOverclocked] = useState<boolean>(false);
 
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -47,6 +50,11 @@ export function PowerCalculator() {
     resetResultOnInputChange();
   };
 
+  const handleMotherboardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMotherboardType(e.target.value as MotherboardType);
+    resetResultOnInputChange();
+  };
+
   const handleCoolingChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCoolingType(e.target.value as CoolingType);
     resetResultOnInputChange();
@@ -55,6 +63,16 @@ export function PowerCalculator() {
   const handleFanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
     setFanCount(isNaN(val) ? 0 : val);
+    resetResultOnInputChange();
+  };
+
+  const handlePcieCardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPcieCardCount(Number(e.target.value));
+    resetResultOnInputChange();
+  };
+
+  const handleUsbLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUsbLevel(e.target.value as UsbPeripheralLevel);
     resetResultOnInputChange();
   };
 
@@ -69,9 +87,10 @@ export function PowerCalculator() {
     if (
       !Number.isInteger(ssdCount) || ssdCount < 0 || ssdCount > 20 ||
       !Number.isInteger(hddCount) || hddCount < 0 || hddCount > 20 ||
-      !Number.isInteger(fanCount) || fanCount < 0 || fanCount > 20
+      !Number.isInteger(fanCount) || fanCount < 0 || fanCount > 20 ||
+      !Number.isInteger(pcieCardCount) || pcieCardCount < 0 || pcieCardCount > 10
     ) {
-      setErrorMsg('Bitte geben Sie für SSD, HDD und Lüfter eine Zahl zwischen 0 und 20 ein.');
+      setErrorMsg('Bitte geben Sie für SSD, HDD, Lüfter und PCIe-Karten eine gültige Zahl ein.');
       setResult(null);
       return;
     }
@@ -94,8 +113,11 @@ export function PowerCalculator() {
       ramGB,
       ssdCount,
       hddCount,
+      motherboardType,
       coolingType,
       fanCount,
+      pcieCardCount,
+      usbLevel,
       isOverclocked,
     });
 
@@ -104,10 +126,14 @@ export function PowerCalculator() {
 
   return (
     <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 space-y-8">
-      <form onSubmit={handleCalculate} className="space-y-6" noValidate>
-        {/* Input Groups */}
-        <div className="space-y-6">
-          {/* Prozessor (CPU) */}
+      <form onSubmit={handleCalculate} className="space-y-8" noValidate>
+        {/* Section 1: Hauptkomponenten */}
+        <fieldset className="space-y-6">
+          <legend className="text-lg font-bold text-slate-100 border-b border-slate-800 pb-2 w-full">
+            PC-Komponenten
+          </legend>
+
+          {/* 1. Prozessor (CPU) */}
           <SearchableSelect
             label="Prozessor (CPU)"
             id="cpu-select"
@@ -121,7 +147,7 @@ export function PowerCalculator() {
             placeholder="Suchen... z. B. Ryzen 7, 9800X3D, Core i7, 14900K"
           />
 
-          {/* Grafikkarte (GPU) */}
+          {/* 2. Grafikkarte (GPU) */}
           <SearchableSelect
             label="Grafikkarte (GPU)"
             id="gpu-select"
@@ -135,7 +161,7 @@ export function PowerCalculator() {
             placeholder="Suchen... z. B. RTX 5070, RTX 5080, RX 9070, RX 7900"
           />
 
-          {/* Arbeitsspeicher (RAM) */}
+          {/* 3. Arbeitsspeicher (RAM) */}
           <div className="space-y-2">
             <label htmlFor="ram-select" className="block text-sm font-semibold text-slate-200">
               Arbeitsspeicher (RAM)
@@ -154,7 +180,7 @@ export function PowerCalculator() {
             </select>
           </div>
 
-          {/* Speicher (SSD & HDD) */}
+          {/* 4. Speicher (SSD & HDD) */}
           <div className="space-y-2">
             <span className="block text-sm font-semibold text-slate-200">
               Speicher
@@ -192,10 +218,29 @@ export function PowerCalculator() {
             </div>
           </div>
 
-          {/* Kühlung */}
+          {/* 5. Mainboard */}
+          <div className="space-y-2">
+            <label htmlFor="motherboard-select" className="block text-sm font-semibold text-slate-200">
+              Mainboard
+            </label>
+            <select
+              id="motherboard-select"
+              value={motherboardType}
+              onChange={handleMotherboardChange}
+              className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+            >
+              {MOTHERBOARD_OPTIONS.map((mb) => (
+                <option key={mb.type} value={mb.type}>
+                  {mb.type === 'standard' ? 'Standard' : 'High-End'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 6. Kühlung & 7. Gehäuselüfter */}
           <div className="space-y-2">
             <span className="block text-sm font-semibold text-slate-200">
-              Kühlung
+              Kühlung & Lüfter
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -229,8 +274,55 @@ export function PowerCalculator() {
               </div>
             </div>
           </div>
+        </fieldset>
 
-          {/* Übertaktung */}
+        {/* Section 2: Erweiterte Einstellungen */}
+        <fieldset className="space-y-6">
+          <legend className="text-lg font-bold text-slate-100 border-b border-slate-800 pb-2 w-full">
+            Erweiterte Einstellungen
+          </legend>
+
+          {/* 8. Zusätzliche PCIe-Karten */}
+          <div className="space-y-2">
+            <label htmlFor="pcie-card-select" className="block text-sm font-semibold text-slate-200">
+              Zusätzliche PCIe-Karten
+            </label>
+            <p className="text-xs text-slate-400">
+              z. B. Soundkarte, Capture Card, Netzwerkkarte oder sonstige Erweiterungskarte
+            </p>
+            <select
+              id="pcie-card-select"
+              value={pcieCardCount}
+              onChange={handlePcieCardChange}
+              className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+            >
+              <option value={0}>0</option>
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+              <option value={3}>3+</option>
+            </select>
+          </div>
+
+          {/* 9. USB / Peripheriegeräte */}
+          <div className="space-y-2">
+            <label htmlFor="usb-level-select" className="block text-sm font-semibold text-slate-200">
+              USB / Peripheriegeräte
+            </label>
+            <select
+              id="usb-level-select"
+              value={usbLevel}
+              onChange={handleUsbLevelChange}
+              className="w-full p-3 bg-slate-800 border border-slate-700/80 rounded-xl text-slate-100 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+            >
+              {USB_OPTIONS.map((u) => (
+                <option key={u.level} value={u.level}>
+                  {u.level === 'low' ? 'Keine / Wenig' : u.level === 'normal' ? 'Normal' : 'Viele'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 10. Übertaktung */}
           <div className="space-y-2">
             <fieldset>
               <legend className="text-sm font-semibold text-slate-200 mb-2">
@@ -260,7 +352,7 @@ export function PowerCalculator() {
               </div>
             </fieldset>
           </div>
-        </div>
+        </fieldset>
 
         {errorMsg && (
           <div className="p-4 bg-red-950/60 border border-red-800 text-red-200 rounded-xl text-sm" role="alert">
@@ -363,50 +455,45 @@ export function PowerCalculator() {
                   <span className="font-mono font-medium text-slate-100">{result.breakdown.hdd} W</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span>Mainboard</span>
+                  <span className="font-mono font-medium text-slate-100">{result.breakdown.motherboard} W</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-800">
                   <span>Kühlung / Lüfter</span>
                   <span className="font-mono font-medium text-slate-100">
                     {result.breakdown.cooling + result.breakdown.fans} W
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800">
-                  <span>Sonstiger Verbrauch</span>
-                  <span className="font-mono font-medium text-slate-100">
-                    {result.breakdown.misc + result.breakdown.overclockBonus} W
-                  </span>
+                  <span>Zusätzliche PCIe-Karten</span>
+                  <span className="font-mono font-medium text-slate-100">{result.breakdown.pcieCards} W</span>
                 </div>
+                <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span>USB / Peripheriegeräte</span>
+                  <span className="font-mono font-medium text-slate-100">{result.breakdown.usbPeripherals} W</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span>Sonstiger Verbrauch</span>
+                  <span className="font-mono font-medium text-slate-100">{result.breakdown.systemOverhead} W</span>
+                </div>
+                {result.breakdown.overclockBonus > 0 && (
+                  <div className="flex justify-between py-1 border-b border-slate-800">
+                    <span>Übertaktungszuschlag</span>
+                    <span className="font-mono font-medium text-slate-100">{result.breakdown.overclockBonus} W</span>
+                  </div>
+                )}
                 <div className="flex justify-between pt-2 font-bold text-slate-100 text-base">
-                  <span>Gesamt</span>
+                  <span>Geschätzter Verbrauch</span>
                   <span className="font-mono text-blue-400">{result.estimatedPowerW} W</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Warum wird dieses Netzteil empfohlen? */}
-          <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-100">
-              Warum wird dieses Netzteil empfohlen?
-            </h2>
-            <div className="text-sm text-slate-300 leading-relaxed space-y-2 bg-slate-800/30 p-4 rounded-xl border border-slate-800">
-              <p>
-                Der Rechner schätzt zunächst den erwarteten Leistungsbedarf deines PC-Systems unter hoher Auslastung ab.
-              </p>
-              <p>
-                Zu dieser geschätzten Gesamtleistung wird eine Sicherheitsreserve von 25 % hinzugerechnet. Dadurch läuft das Netzteil in seinem optimalen Effizienzbereich, fängt kurze Lastspitzen zuverlässig ab und bietet Flexibilität für spätere Aufrüstungen.
-              </p>
-              <p>
-                Abschließend wird der berechnete Wert auf die nächstgrößere handelsübliche Netzteil-Klasse aufgerundet.
-              </p>
-            </div>
-          </div>
-
-          {/* Hinweis zur Berechnung */}
-          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-800/80 text-xs sm:text-sm text-slate-400 space-y-1">
-            <h2 className="font-semibold text-slate-300">
-              Hinweis zur Berechnung
-            </h2>
+          {/* Ergebnis-Erklärung */}
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-800/80 text-xs sm:text-sm text-slate-300 space-y-2">
             <p>
-              Die angezeigten Werte sind Schätzungen und keine Messungen. Der tatsächliche Stromverbrauch kann je nach Systemkonfiguration, Auslastung und Komponenten variieren.
+              Das Ergebnis basiert auf den ausgewählten Komponenten und einer zusätzlichen Leistungsreserve. Der tatsächliche Stromverbrauch kann je nach Hardware, Auslastung und Systemkonfiguration abweichen.
             </p>
           </div>
         </div>

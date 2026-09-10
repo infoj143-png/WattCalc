@@ -9,6 +9,20 @@ export interface RamOption {
 }
 
 export type CoolingType = 'air' | 'aio';
+export type MotherboardType = 'standard' | 'high_end';
+export type UsbPeripheralLevel = 'low' | 'normal' | 'high';
+
+export interface MotherboardOption {
+  type: MotherboardType;
+  label: string;
+  estimatedPowerW: number;
+}
+
+export interface UsbOption {
+  level: UsbPeripheralLevel;
+  label: string;
+  estimatedPowerW: number;
+}
 
 export interface CalculatorInputs {
   cpuId: string;
@@ -16,8 +30,11 @@ export interface CalculatorInputs {
   ramGB: number;
   ssdCount: number;
   hddCount: number;
+  motherboardType?: MotherboardType;
   coolingType: CoolingType;
   fanCount: number;
+  pcieCardCount?: number;
+  usbLevel?: UsbPeripheralLevel;
   isOverclocked: boolean;
   headroomFactor?: number; // e.g. 0.25 for 25%
 }
@@ -28,9 +45,12 @@ export interface PowerBreakdown {
   ram: number;
   ssd: number;
   hdd: number;
+  motherboard: number;
   cooling: number;
   fans: number;
-  misc: number;
+  pcieCards: number;
+  usbPeripherals: number;
+  systemOverhead: number;
   overclockBonus: number;
 }
 
