@@ -1,16 +1,6 @@
-export interface CpuComponent {
-  id: string;
-  name: string;
-  estimatedPowerW: number; // Wattage under peak/load estimate
-  brand?: 'AMD' | 'Intel';
-}
+import { CpuComponent, GpuComponent } from './components';
 
-export interface GpuComponent {
-  id: string;
-  name: string;
-  estimatedPowerW: number; // Wattage under peak/load estimate (TGP/TDP)
-  brand?: 'NVIDIA' | 'AMD' | 'Intel';
-}
+export type { CpuComponent, GpuComponent };
 
 export interface RamOption {
   capacityGB: number;
