@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { PowerCalculator } from '@/components/PowerCalculator';
 
 export const metadata: Metadata = {
-  title: 'Netzteil Rechner – PC Netzteil Watt berechnen | Wattaro',
+  title: 'Netzteil Rechner – PC Netzteil Watt berechnen',
   description:
     'Netzteil Rechner für PC: Berechne schnell den Watt-Bedarf deines PCs aus CPU, GPU & Komponenten. Inkl. 25 % Reserve-Planung für die Netzteil-Wahl.',
   alternates: {
