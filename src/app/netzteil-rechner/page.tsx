@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     title: 'Netzteil Rechner – PC Netzteil Watt berechnen | Wattaro',
     description:
       'Berechne den Watt-Bedarf für dein PC-Netzteil. Wattaro ermittelt die passende Netzteil-Größe basierend auf deinen PC-Komponenten.',
-    url: 'https://wattaro.de/netzteil-rechner/',
+    url: 'https://wattaro.vercel.app/netzteil-rechner/',
     siteName: 'Wattaro',
     locale: 'de_DE',
     type: 'website',
@@ -31,15 +31,15 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://wattaro.de/#website',
-      'url': 'https://wattaro.de/',
+      '@id': 'https://wattaro.vercel.app/#website',
+      'url': 'https://wattaro.vercel.app/',
       'name': 'Wattaro',
       'inLanguage': 'de-DE',
     },
     {
       '@type': 'WebApplication',
-      '@id': 'https://wattaro.de/netzteil-rechner/#webapp',
-      'url': 'https://wattaro.de/netzteil-rechner/',
+      '@id': 'https://wattaro.vercel.app/netzteil-rechner/#webapp',
+      'url': 'https://wattaro.vercel.app/netzteil-rechner/',
       'name': 'Wattaro Netzteil Rechner',
       'applicationCategory': 'UtilityApplication',
       'operatingSystem': 'All',
@@ -50,7 +50,7 @@ const jsonLd = {
     },
     {
       '@type': 'FAQPage',
-      '@id': 'https://wattaro.de/netzteil-rechner/#faq',
+      '@id': 'https://wattaro.vercel.app/netzteil-rechner/#faq',
       'inLanguage': 'de-DE',
       'mainEntity': [
         {
