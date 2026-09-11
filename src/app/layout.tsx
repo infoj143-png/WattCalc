@@ -12,13 +12,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wattcalc.de';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wattaro.de';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Netzteil Rechner – PC Netzteil Watt berechnen | WattCalc",
-    template: "%s | WattCalc",
+    default: "Netzteil Rechner – PC Netzteil Watt berechnen | Wattaro",
+    template: "%s | Wattaro",
   },
   description: "Netzteil Rechner für PC: Berechne schnell den Watt-Bedarf deines PCs aus CPU, GPU & Komponenten. Inkl. 25 % Reserve-Planung für die Netzteil-Wahl.",
   robots: {
