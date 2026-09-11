@@ -3,26 +3,26 @@ import Link from 'next/link';
 import { PowerCalculator } from '@/components/PowerCalculator';
 
 export const metadata: Metadata = {
-  title: 'Netzteil Rechner – PC Netzteil Watt berechnen | WattCalc',
+  title: 'Netzteil Rechner – PC Netzteil Watt berechnen | Wattaro',
   description:
     'Netzteil Rechner für PC: Berechne schnell den Watt-Bedarf deines PCs aus CPU, GPU & Komponenten. Inkl. 25 % Reserve-Planung für die Netzteil-Wahl.',
   alternates: {
     canonical: '/netzteil-rechner/',
   },
   openGraph: {
-    title: 'Netzteil Rechner – PC Netzteil Watt berechnen | WattCalc',
+    title: 'Netzteil Rechner – PC Netzteil Watt berechnen | Wattaro',
     description:
-      'Berechne den Watt-Bedarf für dein PC-Netzteil. WattCalc ermittelt die passende Netzteil-Größe basierend auf deinen PC-Komponenten.',
-    url: 'https://wattcalc.de/netzteil-rechner/',
-    siteName: 'WattCalc',
+      'Berechne den Watt-Bedarf für dein PC-Netzteil. Wattaro ermittelt die passende Netzteil-Größe basierend auf deinen PC-Komponenten.',
+    url: 'https://wattaro.de/netzteil-rechner/',
+    siteName: 'Wattaro',
     locale: 'de_DE',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Netzteil Rechner – PC Netzteil Watt berechnen | WattCalc',
+    title: 'Netzteil Rechner – PC Netzteil Watt berechnen | Wattaro',
     description:
-      'Berechne den Watt-Bedarf für dein PC-Netzteil mit dem WattCalc Netzteil Rechner.',
+      'Berechne den Watt-Bedarf für dein PC-Netzteil mit dem Wattaro Netzteil Rechner.',
   },
 };
 
@@ -31,16 +31,16 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://wattcalc.de/#website',
-      'url': 'https://wattcalc.de/',
-      'name': 'WattCalc',
+      '@id': 'https://wattaro.de/#website',
+      'url': 'https://wattaro.de/',
+      'name': 'Wattaro',
       'inLanguage': 'de-DE',
     },
     {
       '@type': 'WebApplication',
-      '@id': 'https://wattcalc.de/netzteil-rechner/#webapp',
-      'url': 'https://wattcalc.de/netzteil-rechner/',
-      'name': 'WattCalc Netzteil Rechner',
+      '@id': 'https://wattaro.de/netzteil-rechner/#webapp',
+      'url': 'https://wattaro.de/netzteil-rechner/',
+      'name': 'Wattaro Netzteil Rechner',
       'applicationCategory': 'UtilityApplication',
       'operatingSystem': 'All',
       'browserRequirements': 'Requires JavaScript',
@@ -50,7 +50,7 @@ const jsonLd = {
     },
     {
       '@type': 'FAQPage',
-      '@id': 'https://wattcalc.de/netzteil-rechner/#faq',
+      '@id': 'https://wattaro.de/netzteil-rechner/#faq',
       'inLanguage': 'de-DE',
       'mainEntity': [
         {
@@ -68,7 +68,7 @@ const jsonLd = {
           'acceptedAnswer': {
             '@type': 'Answer',
             'text':
-              'Du benötigst ein Netzteil, dessen Nennleistung den geschätzten Maximalverbrauch deines PCs plus eine Planungsreserve von etwa 20 bis 25 % abdeckt. WattCalc errechnet diesen Planungswert automatisch und rundet auf die nächste handelsübliche Netzteil-Größe auf.',
+              'Du benötigst ein Netzteil, dessen Nennleistung den geschätzten Maximalverbrauch deines PCs plus eine Planungsreserve von etwa 20 bis 25 % abdeckt. Wattaro errechnet diesen Planungswert automatisch und rundet auf die nächste handelsübliche Netzteil-Größe auf.',
           },
         },
         {
@@ -135,7 +135,7 @@ export default function NetzteilRechnerPage() {
             >
               <path d="M13 2L3 14h7v8l10-12h-7L13 2z" />
             </svg>
-            <span>WattCalc</span>
+            <span>Wattaro</span>
           </Link>
           <nav className="flex items-center gap-4 text-sm font-medium text-slate-400">
             <Link
@@ -190,7 +190,7 @@ export default function NetzteilRechnerPage() {
           </h2>
           <div className="space-y-4 text-slate-300 text-sm sm:text-base leading-relaxed">
             <p>
-              Der WattCalc Netzteil Rechner berechnet die erwartete Leistungsaufnahme deines PCs auf Basis der typischen Volllast-Verbrauchswerte aller gewählten Komponenten.
+              Der Wattaro Netzteil Rechner berechnet die erwartete Leistungsaufnahme deines PCs auf Basis der typischen Volllast-Verbrauchswerte aller gewählten Komponenten.
             </p>
             <div className="bg-slate-950/80 border border-slate-800/80 rounded-lg p-4 text-xs sm:text-sm font-mono text-slate-200 space-y-2">
               <div className="text-blue-400 font-semibold mb-1">
@@ -370,7 +370,7 @@ export default function NetzteilRechnerPage() {
               Häufige Fragen
             </a>
           </div>
-          <p>© {new Date().getFullYear()} WattCalc. Alle Rechte vorbehalten.</p>
+          <p>© {new Date().getFullYear()} Wattaro. Alle Rechte vorbehalten.</p>
         </div>
       </footer>
     </div>
